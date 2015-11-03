@@ -16,24 +16,36 @@ if [ ! -e "${DOCKER_SOCKET}" ]; then
   exit 1
 fi
 
+if [ -n "${OUTPUT_IMAGE}" ]; then
+	DOCKER_URI="${OUTPUT_REGISTRY}/${OUTPUT_IMAGE}"
+else
+  echo "No output image specified"
+  exit 1
+fi
+export DOCKER_URI="${DOCKER_URI}"
+
 if [[ "${SOURCE_REPOSITORY}" != "git://"* ]] && [[ "${SOURCE_REPOSITORY}" != "git@"* ]]; then
   URL="${SOURCE_REPOSITORY}"
   if [[ "${URL}" != "http://"* ]] && [[ "${URL}" != "https://"* ]]; then
     URL="https://${URL}"
   fi
-  if [ -e "${HTTP_REPO_BASIC}" ]; then
-    BASIC_CREDS="-u ${HTTP_REPO_BASIC}"
+  if [ -n "${HTTP_REPO_BASIC}" ] && [[ "${URL}" == "https://"* ]]; then
+    ENCODED_BASIC=$(echo ${HTTP_REPO_BASIC} | sed 's/@/%40/g')
+    URL="https://${ENCODED_BASIC}@${URL:8}"
   fi
-  curl ${BASIC_CREDS} --head --silent --fail --location --max-time 16 $URL > /dev/null
+  curl --head --silent --fail --location --max-time 16 $URL > /dev/null
   if [ $? != 0 ]; then
     echo "Could not access source url: ${SOURCE_REPOSITORY}"
     exit 1
   fi
+  SRC_REPO="${URL}"
+else
+  SRC_REPO="${SOURCE_REPOSITORY}"
 fi
 
 if [ -n "${SOURCE_REF}" ]; then
   BUILD_DIR=$(mktemp --directory --suffix=docker-build)
-  git clone --recursive "${SOURCE_REPOSITORY}" "${BUILD_DIR}"
+  git clone --recursive "${SRC_REPO}" "${BUILD_DIR}"
   if [ $? != 0 ]; then
     echo "Error trying to fetch git source: ${SOURCE_REPOSITORY}"
     exit 1
@@ -56,6 +68,9 @@ fi
 
 if true || [ -s "/root/.dockercfg" ]; then
   pushd "${BUILD_DIR}/${BUILD_ROOT}"
-  make container push
+  echo "${DOCKER_URI} \(${TAG}\)"
+  DOCKER_REPO="${DOCKER_URI%:*}"
+  DOCKER_TAG="${DOCKER_URI##*:}"
+  DOCKER_REPO="${DOCKER_REPO}" DOCKER_TAG="${DOCKER_TAG}" make container push
   popd
 fi
