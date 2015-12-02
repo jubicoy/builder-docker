@@ -44,8 +44,8 @@ RUN curl -SLO "https://github.com/openshift/origin/releases/download/v1.0.5/open
 
 # Docker
 ENV DOCKER_BUCKET get.docker.com
-ENV DOCKER_VERSION 1.8.3
-ENV DOCKER_SHA256 f024bc65c45a3778cf07213d26016075e8172de8f6e4b5702bedde06c241650f
+ENV DOCKER_VERSION 1.9.1
+ENV DOCKER_SHA256 52286a92999f003e1129422e78be3e1049f963be1888afc3c9a99d5a9af04666
 
 RUN curl -fSL "https://${DOCKER_BUCKET}/builds/Linux/x86_64/docker-$DOCKER_VERSION" -o /usr/local/bin/docker \
   && echo "${DOCKER_SHA256}  /usr/local/bin/docker" | sha256sum -c - \

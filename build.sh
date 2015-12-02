@@ -29,8 +29,12 @@ if [[ "${SOURCE_REPOSITORY}" != "git://"* ]] && [[ "${SOURCE_REPOSITORY}" != "gi
   if [[ "${URL}" != "http://"* ]] && [[ "${URL}" != "https://"* ]]; then
     URL="https://${URL}"
   fi
-  if [ -n "${HTTP_REPO_BASIC}" ] && [[ "${URL}" == "https://"* ]]; then
-    ENCODED_BASIC=$(echo ${HTTP_REPO_BASIC} | sed 's/@/%40/g')
+  if [ -f "${SOURCE_SECRET_PATH}/username" ] \
+        && [ -f "${SOURCE_SECRET_PATH}/password" ] \
+        && [[ "${URL}" == "https://"* ]]; then
+    USERNAME=$(cat "${SOURCE_SECRET_PATH}/username")
+    PASSWORD=$(cat "${SOURCE_SECRET_PATH}/password")
+    ENCODED_BASIC=$(echo "${USERNAME}:${PASSWORD}" | sed 's/@/%40/g')
     URL="https://${ENCODED_BASIC}@${URL:8}"
   fi
   curl --head --silent --fail --location --max-time 16 $URL > /dev/null
@@ -56,6 +60,7 @@ if [ -n "${SOURCE_REF}" ]; then
     echo "Error trying to checkout branch: ${SOURCE_REF}"
     exit 1
   fi
+  GIT_COMMIT=$(git rev-parse HEAD)
   popd
 else
   echo "No branch specified for ${SOURCE_REPOSITORY}"
@@ -70,7 +75,11 @@ if true || [ -s "/root/.dockercfg" ]; then
   pushd "${BUILD_DIR}/${BUILD_ROOT}"
   echo "${DOCKER_URI} \(${TAG}\)"
   DOCKER_REPO="${DOCKER_URI%:*}"
-  DOCKER_TAG="${DOCKER_URI##*:}"
+  if [ -z ${APPEND_SHA+x} ]; then
+    DOCKER_TAG="${DOCKER_URI##*:}"
+  else
+    DOCKER_TAG="${DOCKER_URI##*:}-${GIT_COMMIT:0:8}"
+  fi
   DOCKER_REPO="${DOCKER_REPO}" DOCKER_TAG="${DOCKER_TAG}" make container push
   popd
 fi
