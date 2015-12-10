@@ -51,6 +51,25 @@ RUN curl -fSL "https://${DOCKER_BUCKET}/builds/Linux/x86_64/docker-$DOCKER_VERSI
   && echo "${DOCKER_SHA256}  /usr/local/bin/docker" | sha256sum -c - \
   && chmod +x /usr/local/bin/docker
 
+# PhantomJS
+RUN apt-get update && apt-get install -y \
+  build-essential \
+  chrpath \
+  libssl-dev \
+  libxft-dev \
+  libfreetype6 \
+  libfreetype6-dev \
+  libfontconfig1 \
+  libfontconfig1-dev
+
+ENV PHANTOMJS phantomjs-1.9.8-linux-x86_64
+RUN curl -SLO "https://bitbucket.org/ariya/phantomjs/downloads/$PHANTOMJS.tar.bz2" \
+  && mkdir -p /tmp/.jubicoy-phantomjs-tmp \
+  && tar -xjf "$PHANTOMJS.tar.bz2" -C /tmp/.jubicoy-phantomjs-tmp \
+  && mv "/tmp/.jubicoy-phantomjs-tmp/$PHANTOMJS" /usr/local/share/ \
+  && ln -s "/usr/local/share/$PHANTOMJS/bin/phantomjs" /usr/local/bin/phantomjs \
+  && rm "$PHANTOMJS.tar.bz2" -f
+
 RUN rm -rf /var/lib/apt/lists/*
 
 # Build
