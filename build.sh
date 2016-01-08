@@ -37,7 +37,7 @@ if [[ "${SOURCE_REPOSITORY}" != "git://"* ]] && [[ "${SOURCE_REPOSITORY}" != "gi
     ENCODED_BASIC=$(echo "${USERNAME}:${PASSWORD}" | sed 's/@/%40/g')
     URL="https://${ENCODED_BASIC}@${URL:8}"
   fi
-  curl --head --silent --fail --location --max-time 16 $URL > /dev/null
+  git ls-remote $URL &> /dev/null
   if [ $? != 0 ]; then
     echo "Could not access source url: ${SOURCE_REPOSITORY}"
     exit 1
