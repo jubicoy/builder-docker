@@ -7,7 +7,6 @@ IFS=$'\n\t'
 # SOURCE_REPOSITORY = URL of the source code repo
 # SOURCE_REF = Commit/tag ref to build
 # BUILD_ROOT = Folder to build in
-# HTTP_REPO_BASIC = username:password for git user
 
 DOCKER_SOCKET=/var/run/docker.sock
 
@@ -23,6 +22,19 @@ else
   exit 1
 fi
 export DOCKER_URI="${DOCKER_URI}"
+
+cat <<EOSTATUS
+#
+# Building Docker image
+# *******************************************************************
+System:
+  docker -> $(docker -v)
+  java   -> $(java -version 2>&1|head -1)
+  javac  -> $(javac -version 2>&1|head -1)
+  maven  -> $(mvn -v|head -1)
+  node   -> $(node -v)
+  npm    -> $(npm -v)
+EOSTATUS
 
 if [[ "${SOURCE_REPOSITORY}" != "git://"* ]] && [[ "${SOURCE_REPOSITORY}" != "git@"* ]]; then
   URL="${SOURCE_REPOSITORY}"
