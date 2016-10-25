@@ -54,8 +54,8 @@ RUN curl -SLO "https://github.com/openshift/origin/releases/download/v1.0.5/open
 
 # Docker
 ENV DOCKER_BUCKET get.docker.com
-ENV DOCKER_VERSION 1.12.2
-ENV DOCKER_SHA256 cb30ad9864f37512c50db725c14a22c3f55028949e4f1e4e585a6b3c624c4b0e
+ENV DOCKER_VERSION 1.11.2
+ENV DOCKER_SHA256 8c2e0c35e3cda11706f54b2d46c2521a6e9026a7b13c7d4b8ae1f3a706fc55e1
 
 RUN set -x \
   && curl -fSL "https://${DOCKER_BUCKET}/builds/Linux/x86_64/docker-${DOCKER_VERSION}.tgz" -o docker.tgz \
