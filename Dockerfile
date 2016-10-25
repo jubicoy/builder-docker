@@ -5,15 +5,19 @@ USER root
 # Extra deps
 RUN dpkg --add-architecture i386
 RUN apt-get update && apt-get install -y \
-  build-essential \
-  expect \
-  lib32stdc++6 \
-  maven \
-  zlib1g:i386 \
-  make \
-  git \
-  openssh-client \
-  curl
+    build-essential \
+    ca-certificates \
+    openssl \
+    expect \
+    lib32stdc++6 \
+    maven \
+    zlib1g:i386 \
+    make \
+    git \
+    openssh-client \
+    curl \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # from nodejs/docker-node
 RUN set -ex \
@@ -24,22 +28,24 @@ RUN set -ex \
     FD3A5288F042B6850C66B31F09FE44734EB7990E \
     71DCFD284A79C3B38668286BC97EC7A07EDE3FC1 \
     DD8F2338BAE7501E3DD5AC78C273792F7D83545D \
+    B9AE9905FFD7803F25714661B63B535A4C206CA9 \
+    C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8 \
   ; do \
     gpg --keyserver ha.pool.sks-keyservers.net --recv-keys "$key"; \
   done
 
-ENV NODE_VERSION 0.10.41
-ENV NPM_VERSION 2.14.15
+ENV NPM_CONFIG_LOGLEVEL info
+ENV NODE_VERSION 6.9.1
 
-RUN curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.gz" \
+RUN curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz" \
   && curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/SHASUMS256.txt.asc" \
-  && gpg --verify SHASUMS256.txt.asc \
-  && grep " node-v$NODE_VERSION-linux-x64.tar.gz\$" SHASUMS256.txt.asc | sha256sum -c - \
-  && tar -xzf "node-v$NODE_VERSION-linux-x64.tar.gz" -C /usr/local --strip-components=1 \
-  && rm "node-v$NODE_VERSION-linux-x64.tar.gz" SHASUMS256.txt.asc \
-  && npm install -g npm@"$NPM_VERSION" \
-  && npm cache clear
+  && gpg --batch --decrypt --output SHASUMS256.txt SHASUMS256.txt.asc \
+  && grep " node-v$NODE_VERSION-linux-x64.tar.xz\$" SHASUMS256.txt | sha256sum -c - \
+  && tar -xJf "node-v$NODE_VERSION-linux-x64.tar.xz" -C /usr/local --strip-components=1 \
+  && rm "node-v$NODE_VERSION-linux-x64.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt \
+  && ln -s /usr/local/bin/node /usr/local/bin/nodejs
 
+# OC etc
 RUN curl -SLO "https://github.com/openshift/origin/releases/download/v1.0.5/openshift-origin-v1.0.5-96963b6-linux-amd64.tar.gz" \
   && mkdir -p /tmp/.jubicoy-jenkins-tmp \
   && tar -xvf "openshift-origin-v1.0.5-96963b6-linux-amd64.tar.gz" -C /tmp/.jubicoy-jenkins-tmp --strip-components=1 \
@@ -48,25 +54,32 @@ RUN curl -SLO "https://github.com/openshift/origin/releases/download/v1.0.5/open
 
 # Docker
 ENV DOCKER_BUCKET get.docker.com
-ENV DOCKER_VERSION 1.9.1
-ENV DOCKER_SHA256 52286a92999f003e1129422e78be3e1049f963be1888afc3c9a99d5a9af04666
+ENV DOCKER_VERSION 1.12.2
+ENV DOCKER_SHA256 cb30ad9864f37512c50db725c14a22c3f55028949e4f1e4e585a6b3c624c4b0e
 
-RUN curl -fSL "https://${DOCKER_BUCKET}/builds/Linux/x86_64/docker-$DOCKER_VERSION" -o /usr/local/bin/docker \
-  && echo "${DOCKER_SHA256}  /usr/local/bin/docker" | sha256sum -c - \
-  && chmod +x /usr/local/bin/docker
+RUN set -x \
+  && curl -fSL "https://${DOCKER_BUCKET}/builds/Linux/x86_64/docker-${DOCKER_VERSION}.tgz" -o docker.tgz \
+  && echo "${DOCKER_SHA256} *docker.tgz" | sha256sum -c - \
+  && tar -xzvf docker.tgz \
+  && mv docker/* /usr/local/bin/ \
+  && rmdir docker \
+  && rm docker.tgz \
+  && docker -v
 
 # PhantomJS
 RUN apt-get update && apt-get install -y \
-  build-essential \
-  chrpath \
-  libssl-dev \
-  libxft-dev \
-  libfreetype6 \
-  libfreetype6-dev \
-  libfontconfig1 \
-  libfontconfig1-dev
+    build-essential \
+    chrpath \
+    libssl-dev \
+    libxft-dev \
+    libfreetype6 \
+    libfreetype6-dev \
+    libfontconfig1 \
+    libfontconfig1-dev \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-ENV PHANTOMJS phantomjs-1.9.8-linux-x86_64
+ENV PHANTOMJS phantomjs-2.1.1-linux-x86_64
 RUN curl -SLO "https://bitbucket.org/ariya/phantomjs/downloads/$PHANTOMJS.tar.bz2" \
   && mkdir -p /tmp/.jubicoy-phantomjs-tmp \
   && tar -xjf "$PHANTOMJS.tar.bz2" -C /tmp/.jubicoy-phantomjs-tmp \
